@@ -39,7 +39,7 @@ def webhook():
         match = re.search(r"(\d+[.,]?\d*)", mensagem)
         if match:
             valor = match.group(1).replace(",", ".")
-            resposta = registrar_gasto(numero, nome, valor)
+            resposta = registrar_gasto(numero, nome, valor, mensagem)
             if not resposta or not resposta.strip():
                 resposta = "✅ Gasto registrado com sucesso."
         else:
