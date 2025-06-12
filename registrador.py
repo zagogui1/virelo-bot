@@ -1,114 +1,59 @@
-import pandas as pd
-import os
-import json
+
 from datetime import datetime
+import pandas as pd
+from supabase import create_client
+import json
 
-def atualizar_clientes_json(numero, nome):
-    caminho = "clientes/clientes.json"
-    os.makedirs("clientes", exist_ok=True)
+with open("config.json") as f:
+    config = json.load(f)
 
-    if os.path.exists(caminho):
-        try:
-            with open(caminho, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-        except json.JSONDecodeError:
-            dados = {}
-    else:
-        dados = {}
+supabase = create_client(config["SUPABASE_URL"], config["SUPABASE_API_KEY"])
 
-    dados.pop("", None)
-    dados[numero] = f"{nome} ({numero})"
+def registrar_gasto(nome, numero, valor, descricao, categoria="Outros"):
+    data = datetime.now().strftime("%Y-%m-%d")
+    timestamp = datetime.now().isoformat()
 
-    with open(caminho, "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=2, ensure_ascii=False)
+    # 1. Procurar o usuário no Supabase
+    usuario = supabase.table("users").select("*").eq("telefone", numero).execute()
 
-def identificar_membro(numero_remetente):
-    base = "clientes"
-    if not os.path.exists(base):
-        return None, None
+    if not usuario.data:
+        return f"❌ Usuário {nome} ({numero}) não encontrado no banco."
 
-    for titular in os.listdir(base):
-        caminho_membros = os.path.join(base, titular, "membros.json")
-        if os.path.exists(caminho_membros):
-            with open(caminho_membros, "r", encoding="utf-8") as f:
-                membros = json.load(f)
-                if numero_remetente in membros:
-                    return titular, membros[numero_remetente]["nome"]
+    user_id = usuario.data[0]["id"]
 
-    return None, None
+    # 2. Gravar transação
+    supabase.table("transactions").insert({
+        "user_id": user_id,
+        "valor": float(valor),
+        "descricao": descricao,
+        "categoria": categoria,
+        "data": data,
+        "timestamp": timestamp
+    }).execute()
 
-def registrar_gasto(numero, nome, valor, categoria="Outros"):
-    try:
-        atualizar_clientes_json(numero, nome)
+    # 3. Mensagem formatada de retorno
+    mensagem = f"""✅ Transação registrada com sucesso, {nome}!
 
-        # Verifica se é membro de uma família
-        titular, nome_membro = identificar_membro(numero)
+📝 *Descrição:* {descricao}
+💰 *Valor:* R$ {float(valor):.2f}
+📂 *Categoria:* {categoria}
+📅 *Data:* {data}
+📌 *Status:* Pago
+"""
+    return mensagem
 
-        if titular and nome_membro:
-            pasta = f"clientes/{titular}/{nome_membro}"
-            os.makedirs(pasta, exist_ok=True)
-            nome_arquivo = datetime.now().strftime("%Y-%m") + ".json"
-            caminho_individual = os.path.join(pasta, nome_arquivo)
-            caminho_consolidado = os.path.join(f"clientes/{titular}", f"consolidado_{nome_arquivo}")
-            nome_exibicao = f"{nome_membro} (familiar)"
-        else:
-            pasta = f"planilhas/{nome} ({numero})"
-            os.makedirs(pasta, exist_ok=True)
-            nome_arquivo = datetime.now().strftime("%Y-%m") + ".json"
-            caminho_individual = os.path.join(pasta, nome_arquivo)
-            caminho_consolidado = None
-            nome_exibicao = nome
+def adicionar_membro_familia(nome, numero, titular):
+    # Procura o titular pelo número
+    titular_res = supabase.table("users").select("*").eq("telefone", titular).execute()
+    if not titular_res.data:
+        return f"❌ Titular {titular} não encontrado."
 
-        novo_dado = {
-            "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "valor": float(valor),
-            "categoria": categoria
-        }
+    titular_id = titular_res.data[0]["family_id"]
+    # Cria um novo usuário vinculado à mesma família
+    supabase.table("users").insert({
+        "nome": nome,
+        "telefone": numero,
+        "family_id": titular_id
+    }).execute()
 
-        # Salva dado individual
-        if os.path.exists(caminho_individual):
-            df = pd.read_json(caminho_individual)
-        else:
-            df = pd.DataFrame(columns=["data", "valor", "categoria"])
-
-        df = pd.concat([df, pd.DataFrame([novo_dado])], ignore_index=True)
-        df.to_json(caminho_individual, orient="records", indent=2)
-
-        # Se for familiar, atualiza consolidado do titular
-        if caminho_consolidado:
-            if os.path.exists(caminho_consolidado):
-                df_c = pd.read_json(caminho_consolidado)
-            else:
-                df_c = pd.DataFrame(columns=["data", "valor", "categoria", "membro"])
-            novo_dado["membro"] = nome_membro
-            df_c = pd.concat([df_c, pd.DataFrame([novo_dado])], ignore_index=True)
-            df_c.to_json(caminho_consolidado, orient="records", indent=2)
-
-        return f"✅ Gasto de R$ {valor} registrado com sucesso para {nome_exibicao}!"
-    except Exception as e:
-        return f"❌ Erro ao registrar o gasto: {str(e)}"
-
-def adicionar_membro_familia(numero_titular, nome_membro, numero_membro):
-    try:
-        pasta_titular = f"clientes/{numero_titular}"
-        caminho_arquivo = os.path.join(pasta_titular, "membros.json")
-
-        os.makedirs(pasta_titular, exist_ok=True)
-
-        if os.path.exists(caminho_arquivo):
-            with open(caminho_arquivo, "r", encoding="utf-8") as f:
-                membros = json.load(f)
-        else:
-            membros = {}
-
-        membros[numero_membro] = {
-            "nome": nome_membro,
-            "titular": numero_titular
-        }
-
-        with open(caminho_arquivo, "w", encoding="utf-8") as f:
-            json.dump(membros, f, indent=2, ensure_ascii=False)
-
-        return f"👤 Membro \"{nome_membro}\" ({numero_membro}) adicionado com sucesso à família!"
-    except Exception as e:
-        return f"❌ Erro ao adicionar membro: {str(e)}"
+    return f"👤 Membro {nome} ({numero}) adicionado com sucesso à família de {titular_res.data[0]['nome']}."
