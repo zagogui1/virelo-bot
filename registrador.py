@@ -1,25 +1,26 @@
 from datetime import datetime
 from supabase import create_client
-import json
+import os
 
-# Carrega config
-with open("config.json", encoding="utf-8") as f:
-    config = json.load(f)
+# Lê as variáveis de ambiente definidas no Render
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
 
-supabase = create_client(config["SUPABASE_URL"], config["SUPABASE_API_KEY"])
+# Cria o cliente Supabase
+supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 def registrar_gasto(numero, nome, valor, descricao, categoria="Outros"):
     data = datetime.now().strftime("%d/%m/%Y")
     timestamp = datetime.now().isoformat()
 
-    # Busca o usuário
+    # Busca o usuário pelo telefone
     usuario = supabase.table("users").select("*").eq("telefone", numero).execute()
     if not usuario.data:
         return f"❌ Usuário {nome} ({numero}) não encontrado no banco."
 
     user_id = usuario.data[0]["id"]
 
-    # Salva transação
+    # Salva a transação
     supabase.table("transactions").insert({
         "user_id": user_id,
         "valor": float(valor),
@@ -29,9 +30,9 @@ def registrar_gasto(numero, nome, valor, descricao, categoria="Outros"):
         "timestamp": timestamp
     }).execute()
 
-    # Mensagem personalizada
-    mensagem = f"""
-💸 *Gasto registrado com sucesso, {nome}*!
+    # Retorna a mensagem
+    return f"""
+💸 *Gasto registrado com sucesso, {nome}!*
 
 📌 *Categoria:* {categoria}
 📝 *Descrição:* {descricao}
@@ -40,18 +41,15 @@ def registrar_gasto(numero, nome, valor, descricao, categoria="Outros"):
 🔐 *Status:* Confirmado
 
 ⚙️ Esses dados já estão organizados na sua planilha do mês!
-"""
-    return mensagem.strip()
+""".strip()
 
 def adicionar_membro_familia(titular, nome, numero):
-    # Busca o titular
     titular_res = supabase.table("users").select("*").eq("telefone", titular).execute()
     if not titular_res.data:
         return f"❌ Titular {titular} não encontrado."
 
     titular_id = titular_res.data[0]["family_id"]
 
-    # Adiciona novo membro
     supabase.table("users").insert({
         "nome": nome,
         "telefone": numero,
