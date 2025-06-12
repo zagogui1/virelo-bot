@@ -2,18 +2,17 @@
 from datetime import datetime
 import pandas as pd
 from supabase import create_client
-import json
+import os
 
-with open("config.json") as f:
-    config = json.load(f)
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
 
-supabase = create_client(config["SUPABASE_URL"], config["SUPABASE_API_KEY"])
+supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 def registrar_gasto(nome, numero, valor, descricao, categoria="Outros"):
     data = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().isoformat()
 
-    # 1. Procurar o usuário no Supabase
     usuario = supabase.table("users").select("*").eq("telefone", numero).execute()
 
     if not usuario.data:
@@ -21,7 +20,6 @@ def registrar_gasto(nome, numero, valor, descricao, categoria="Outros"):
 
     user_id = usuario.data[0]["id"]
 
-    # 2. Gravar transação
     supabase.table("transactions").insert({
         "user_id": user_id,
         "valor": float(valor),
@@ -31,7 +29,6 @@ def registrar_gasto(nome, numero, valor, descricao, categoria="Outros"):
         "timestamp": timestamp
     }).execute()
 
-    # 3. Mensagem formatada de retorno
     mensagem = f"""✅ Transação registrada com sucesso, {nome}!
 
 📝 *Descrição:* {descricao}
@@ -43,13 +40,11 @@ def registrar_gasto(nome, numero, valor, descricao, categoria="Outros"):
     return mensagem
 
 def adicionar_membro_familia(nome, numero, titular):
-    # Procura o titular pelo número
     titular_res = supabase.table("users").select("*").eq("telefone", titular).execute()
     if not titular_res.data:
         return f"❌ Titular {titular} não encontrado."
 
     titular_id = titular_res.data[0]["family_id"]
-    # Cria um novo usuário vinculado à mesma família
     supabase.table("users").insert({
         "nome": nome,
         "telefone": numero,
