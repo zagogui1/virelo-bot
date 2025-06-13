@@ -46,3 +46,19 @@ def registrar_gasto(numero, nome, valor, descricao):
 
 ⚙️ Esses dados já estão organizados na sua planilha do mês!
 """.strip()
+
+
+def adicionar_membro_familia(titular, nome, numero):
+    titular_res = supabase.table("users").select("*").eq("telefone", titular).execute()
+    if not titular_res.data:
+        return f"❌ Titular {titular} não encontrado."
+
+    titular_id = titular_res.data[0]["family_id"]
+
+    supabase.table("users").insert({
+        "nome": nome,
+        "telefone": numero,
+        "family_id": titular_id
+    }).execute()
+
+    return f"👨‍👩‍👧 Membro *{nome}* ({numero}) adicionado à família de *{titular_res.data[0]['nome']}* com sucesso!"
