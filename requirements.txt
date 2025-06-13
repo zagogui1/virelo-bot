@@ -2,3 +2,5 @@ flask
 requests
 supabase
 pandas
+torch
+sentence-transformers
