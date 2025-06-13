@@ -10,7 +10,7 @@ SUPABASE_API_KEY = os.environ.get("SUPABASE_API_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 def registrar_gasto(numero, nome, valor, descricao, categoria="Outros"):
-    data = datetime.now().strftime("%d/%m/%Y")
+    data = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().isoformat()
 
     # Busca o usuário pelo telefone
