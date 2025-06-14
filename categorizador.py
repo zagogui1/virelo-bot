@@ -1,99 +1,89 @@
 from sentence_transformers import SentenceTransformer, util
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+modelo = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Frases de exemplo realistas para cada categoria
-categoria_frases = {
-    "Investimentos": [
-        "investi 100 reais em ações", "apliquei no tesouro direto", "comprei cripto", "fiz um investimento hoje"
-    ],
-    "Serviços Digitais": [
-        "paguei netflix", "assinei disney+", "hbo max", "spotify", "canva premium", "paguei domínio do site"
-    ],
-    "Serviços Domésticos": [
-        "chamei o encanador", "paguei a faxineira", "manutenção da casa", "serviço de conserto", "paguei o jardineiro"
-    ],
-    "Reembolsáveis": [
-        "empresa vai me reembolsar", "adiantamento para viagem de trabalho", "vou receber esse valor de volta"
-    ],
-    "Trabalho / Profissão": [
-        "paguei coworking", "gastei com jaleco", "ferramentas de trabalho", "comprei material para o serviço"
-    ],
-    "Emergências": [
-        "gasto inesperado", "socorro com pneu", "emergência médica", "urgência no hospital"
-    ],
+categorias = {
     "Assinaturas": [
-        "assinei um serviço", "plano mensal", "assinatura premium", "paguei o pacote mensal"
+        "spotify", "netflix", "disney", "hbo", "globoplay", "prime video", "deezer", "apple tv", "streaming", "plano mensal"
     ],
     "Cartão de Crédito": [
-        "paguei a fatura", "cartão de crédito do banco", "pagamento do cartão"
+        "fatura do cartão", "paguei cartão", "parcela cartão", "nubank", "inter", "itaucard", "bradescard", "roxo"
     ],
     "Casa": [
-        "gastei com aluguel", "paguei condomínio", "conserto da geladeira", "reforma da casa"
+        "aluguel", "condomínio", "reforma", "prestação da casa", "conta de luz", "água", "internet", "telefone", "gás", "tv por assinatura", "net", "vivo", "claro"
     ],
     "Cuidados Pessoais": [
-        "fui ao salão", "paguei manicure", "comprei cremes", "cortei o cabelo"
+        "barbeiro", "manicure", "pedicure", "cabeleireiro", "estética", "spa", "salão de beleza", "depilação"
     ],
     "Doações / Presentes": [
-        "dei um presente", "doei dinheiro", "contribuição para alguém"
+        "presente de aniversário", "doação igreja", "ajuda alguém", "pix presente", "lembrancinha", "vaquinha", "solidariedade"
     ],
     "Educação": [
-        "paguei a escola", "mensalidade da faculdade", "curso online", "comprei livros"
+        "mensalidade escola", "curso", "faculdade", "paguei cursinho", "plataforma de estudo", "ead", "curso online", "aula particular"
     ],
     "Impostos": [
-        "iptu", "ipva", "paguei imposto", "darf", "receita federal"
+        "iptu", "ipva", "irpf", "multas", "darf", "contribuição", "dívida ativa", "tributo"
     ],
     "Lazer e Entretenimento": [
-        "fui ao cinema", "paguei ingresso", "comprei jogo", "diversão com amigos"
+        "cinema", "show", "bar", "festa", "passeio", "restaurante com amigos", "balada", "diversão"
     ],
     "Mercado": [
-        "comprei no mercado", "gastei no pão de açúcar", "fui ao supermercado", "comida da semana"
+        "supermercado", "pão de açúcar", "extra", "carrefour", "feira", "hortifruti", "mercado", "sacolão", "compras do mês"
     ],
     "Outros": [
-        "não sei onde encaixar", "gasto diverso"
+        "sem categoria", "não sei", "outro gasto", "diverso", "não classificado"
     ],
     "Pets": [
-        "paguei ração", "vacina do cachorro", "pet shop", "consulta veterinária"
+        "ração", "veterinário", "banho e tosa", "petshop", "consulta pet", "remédio pet"
     ],
     "Recebimentos": [
-        "recebi meu salário", "dinheiro entrou na conta", "renda extra"
+        "salário", "rendimento", "dinheiro recebido", "recebi pix", "transferência recebida", "freelancer", "depósito"
     ],
     "Saúde": [
-        "paguei consulta médica", "remédio", "fui ao hospital", "plano de saúde"
+        "remédio", "farmácia", "consulta médica", "plano de saúde", "dentista", "cirurgia", "psicólogo", "hospital", "exame"
     ],
     "Transporte": [
-        "uber", "ônibus", "gasolina", "estacionamento", "corrida de app"
-    ],
-    "Utilidades": [
-        "conta de luz", "internet", "água", "telefone fixo"
+        "combustível", "uber", "99", "ônibus", "metrô", "transporte público", "pedágio", "manutenção carro", "gasolina"
     ],
     "Vestuário": [
-        "comprei roupa", "paguei sapato", "nova camiseta", "vestido novo"
+        "roupa", "calçado", "sapato", "bermuda", "camisa", "tênis", "blusa", "jaqueta", "vestido"
     ],
     "Viagem": [
-        "hotel", "passagem aérea", "fiz uma viagem", "reserva no booking"
+        "hotel", "passagem", "reserva airbnb", "viagem de férias", "turismo", "trip", "bagagem", "voo"
+    ],
+    "Investimentos": [
+        "tesouro direto", "ações", "fundos imobiliários", "bitcoin", "criptomoeda", "cdb", "renda fixa", "poupança", "renda variável"
+    ],
+    "Emergências": [
+        "gasto inesperado", "urgência", "socorro", "emergência médica", "pneu furado", "vazamento", "pane", "imprevisto"
+    ],
+    "Serviços Domésticos": [
+        "faxina", "diarista", "encanador", "eletricista", "manutenção", "chamei técnico", "dedetização", "montador"
+    ],
+    "Serviços Digitais": [
+        "canva", "cloud", "servidor", "plano pro", "editor de vídeo", "plano anual", "domínio", "gpt", "plano IA"
+    ],
+    "Trabalho / Profissão": [
+        "jaleco", "coworking", "material médico", "assinatura CRM", "instrumento de trabalho", "investi no trabalho", "equipamento profissional"
+    ],
+    "Reembolsáveis": [
+        "gasto reembolsável", "viagem a trabalho", "empresa vai pagar", "adiantamento", "ressarcimento"
     ]
 }
 
-# Vetores prontos
-categoria_vetores = {
-    categoria: [model.encode(frase) for frase in frases]
-    for categoria, frases in categoria_frases.items()
-}
+def classificar_categoria(mensagem):
+    mensagem = mensagem.lower()
+    mensagem_embedding = modelo.encode(mensagem, convert_to_tensor=True)
 
-def classificar_categoria(mensagem, limiar_similaridade=0.45):
-    frase_vetor = model.encode(mensagem)
-    melhor_categoria = "Outros"
-    maior_similaridade = 0
+    melhor_categoria = None
+    melhor_similaridade = 0.55  # limiar mínimo
 
-    for categoria, vetores in categoria_vetores.items():
-        for vetor in vetores:
-            similaridade = util.cos_sim(frase_vetor, vetor).item()
-            if similaridade > maior_similaridade:
-                maior_similaridade = similaridade
+    for categoria, exemplos in categorias.items():
+        for exemplo in exemplos:
+            exemplo_embedding = modelo.encode(exemplo, convert_to_tensor=True)
+            similaridade = float(util.pytorch_cos_sim(mensagem_embedding, exemplo_embedding))
+            if similaridade > melhor_similaridade:
+                melhor_similaridade = similaridade
                 melhor_categoria = categoria
 
-    if maior_similaridade >= limiar_similaridade:
-        return melhor_categoria
-    else:
-        return "Outros"
+    return melhor_categoria if melhor_categoria else "Outros"
