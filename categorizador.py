@@ -3,47 +3,155 @@ import re
 
 modelo = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Dicionário de categorias com exemplos reais
+# Dicionário otimizado com frases padronizadas
 categorias = {
-    "Assinaturas": ["spotify", "netflix", "disney", "hbo", "globoplay", "prime video", "deezer", "apple tv", "streaming", "plano mensal"],
-    "Cartão de Crédito": ["fatura do cartão", "paguei cartão", "parcela cartão", "nubank", "inter", "itaucard", "bradescard", "roxo"],
-    "Casa": ["aluguel", "condomínio", "reforma", "prestação da casa", "conta de luz", "água", "internet", "telefone", "gás", "tv por assinatura", "net", "vivo", "claro"],
-    "Cuidados Pessoais": ["barbeiro", "manicure", "pedicure", "cabeleireiro", "estética", "spa", "salão de beleza", "depilação"],
-    "Doações / Presentes": ["presente de aniversário", "doação igreja", "ajuda alguém", "pix presente", "lembrancinha", "vaquinha", "solidariedade"],
-    "Educação": ["mensalidade escola", "curso", "faculdade", "paguei cursinho", "plataforma de estudo", "ead", "curso online", "aula particular"],
-    "Impostos": ["iptu", "ipva", "irpf", "multas", "darf", "contribuição", "dívida ativa", "tributo"],
-    "Lazer e Entretenimento": ["cinema", "show", "bar", "festa", "passeio", "restaurante com amigos", "balada", "diversão"],
-    "Mercado": ["supermercado", "pão de açúcar", "extra", "carrefour", "feira", "hortifruti", "mercado", "sacolão", "compras do mês"],
-    "Outros": ["sem categoria", "não sei", "outro gasto", "diverso", "não classificado"],
-    "Pets": ["ração", "veterinário", "banho e tosa", "petshop", "consulta pet", "remédio pet"],
-    "Recebimentos": ["salário", "rendimento", "dinheiro recebido", "recebi pix", "transferência recebida", "freelancer", "depósito"],
-    "Saúde": ["remédio", "farmácia", "consulta médica", "plano de saúde", "dentista", "cirurgia", "psicólogo", "hospital", "exame"],
-    "Transporte": ["combustível", "uber", "99", "ônibus", "metrô", "transporte público", "pedágio", "manutenção carro", "gasolina"],
-    "Vestuário": ["roupa", "calçado", "sapato", "bermuda", "camisa", "tênis", "blusa", "jaqueta", "vestido"],
-    "Viagem": ["hotel", "passagem", "reserva airbnb", "viagem de férias", "turismo", "trip", "bagagem", "voo"],
-    "Investimentos": ["tesouro direto", "ações", "fundos imobiliários", "bitcoin", "criptomoeda", "cdb", "renda fixa", "poupança", "renda variável"],
-    "Emergências": ["gasto inesperado", "urgência", "socorro", "emergência médica", "pneu furado", "vazamento", "pane", "imprevisto"],
-    "Serviços Domésticos": ["faxina", "diarista", "encanador", "eletricista", "manutenção", "chamei técnico", "dedetização", "montador"],
-    "Serviços Digitais": ["canva", "cloud", "servidor", "plano pro", "editor de vídeo", "plano anual", "domínio", "gpt", "plano IA"],
-    "Trabalho / Profissão": ["jaleco", "coworking", "material médico", "assinatura CRM", "instrumento de trabalho", "investi no trabalho", "equipamento profissional"],
-    "Reembolsáveis": ["gasto reembolsável", "viagem a trabalho", "empresa vai pagar", "adiantamento", "ressarcimento"]
+    "Assinaturas": [
+        "paguei 20 reais no spotify",
+        "gastei 30 reais com netflix",
+        "paguei 50 reais em streaming",
+        "comprei plano mensal da disney",
+        "assinei globoplay por 40 reais"
+    ],
+    "Cartão de Crédito": [
+        "paguei 500 da fatura do cartão",
+        "quitei o cartão do nubank com 700 reais",
+        "paguei 300 reais no itaucard",
+        "gastei 250 reais no cartão roxo",
+        "comprei roupas no cartão por 600 reais"
+    ],
+    "Casa": [
+        "paguei 1000 reais de aluguel",
+        "gastei 250 reais com conta de luz",
+        "comprei gás por 130 reais",
+        "paguei 300 de condomínio",
+        "paguei a internet por 120 reais"
+    ],
+    "Cuidados Pessoais": [
+        "gastei 80 reais no cabeleireiro",
+        "paguei 50 na manicure",
+        "comprei pacote de spa por 200 reais",
+        "fiz depilação por 60 reais"
+    ],
+    "Doações / Presentes": [
+        "doei 100 reais para igreja",
+        "dei presente de aniversário de 150 reais",
+        "gastei 50 reais em lembrancinha",
+        "enviei pix de 200 reais como presente"
+    ],
+    "Educação": [
+        "paguei 1000 reais de mensalidade da faculdade",
+        "comprei curso online por 300 reais",
+        "assinei plataforma de estudo por 120 reais",
+        "gastei 250 reais em aula particular"
+    ],
+    "Impostos": [
+        "paguei 200 de iptu",
+        "gastei 600 com imposto de renda",
+        "paguei 500 de ipva",
+        "quitei 100 reais de multa"
+    ],
+    "Lazer e Entretenimento": [
+        "gastei 100 reais no bar",
+        "comprei ingresso de cinema por 50 reais",
+        "paguei 200 em festa",
+        "fui ao show e gastei 300 reais"
+    ],
+    "Mercado": [
+        "gastei 250 reais no supermercado",
+        "comprei 100 reais em feira",
+        "fiz compras do mês por 500 reais",
+        "comprei comida por 200 reais"
+    ],
+    "Outros": [
+        "não sei a categoria desse gasto",
+        "outro tipo de despesa de 100 reais",
+        "gasto indefinido de 80 reais",
+        "sem classificação"
+    ],
+    "Pets": [
+        "paguei 90 reais em ração",
+        "gastei 150 no veterinário",
+        "comprei brinquedos pet por 60 reais",
+        "banho e tosa por 100 reais"
+    ],
+    "Recebimentos": [
+        "recebi 2000 reais de salário",
+        "ganhei 500 reais em transferência",
+        "rendimento de 300 reais",
+        "recebi 1500 de freelance"
+    ],
+    "Saúde": [
+        "comprei remédio por 80 reais",
+        "paguei 200 de consulta médica",
+        "gastei 300 no hospital",
+        "paguei plano de saúde de 400 reais"
+    ],
+    "Transporte": [
+        "paguei 100 reais em uber",
+        "gastei 70 reais com gasolina",
+        "comprei bilhete de metrô por 50 reais",
+        "paguei manutenção do carro por 300 reais"
+    ],
+    "Vestuário": [
+        "comprei roupa por 150 reais",
+        "gastei 200 reais em sapato",
+        "paguei 300 reais em tênis",
+        "comprei vestido por 180 reais"
+    ],
+    "Viagem": [
+        "comprei passagem por 800 reais",
+        "paguei hotel por 1000 reais",
+        "reserva de airbnb por 900 reais",
+        "gastei 500 em turismo"
+    ],
+    "Investimentos": [
+        "comprei ações por 1000 reais",
+        "apliquei 1500 no tesouro direto",
+        "investi 2000 reais em cdb",
+        "coloquei 500 em bitcoin"
+    ],
+    "Emergências": [
+        "gastei 300 com emergência médica",
+        "paguei 200 reais por socorro",
+        "gasto inesperado de 400 reais",
+        "consertei pane elétrica por 350 reais"
+    ],
+    "Serviços Domésticos": [
+        "paguei 150 reais para diarista",
+        "chamei encanador e paguei 200 reais",
+        "gastei 180 com dedetização",
+        "conserto doméstico por 300 reais"
+    ],
+    "Serviços Digitais": [
+        "assinei plano pro do canva por 90 reais",
+        "paguei 120 em servidor cloud",
+        "comprei domínio por 60 reais",
+        "plano IA por 100 reais"
+    ],
+    "Trabalho / Profissão": [
+        "comprei jaleco por 100 reais",
+        "investi 500 reais no consultório",
+        "paguei assinatura CRM de 200 reais",
+        "gastei 800 com equipamento de trabalho"
+    ]
 }
 
-# Pré-processamento da mensagem (sem remover emojis!)
+# Função de limpeza da frase (preserva emojis)
 def limpar_mensagem(msg):
     msg = msg.lower()
-    msg = re.sub(r'[^\w\s€$Rr]+', '', msg)  # remove pontuações e símbolos (mas mantém emojis)
+    msg = re.sub(r'[^\w\s€$Rr]+', '', msg)  # mantém emojis
     msg = msg.replace("padoca", "padaria")
     msg = msg.replace("reai", "reais").replace("real", "reais")
     msg = re.sub(r'\b(r?\$)?\s?\d+[.,]?\d*\b', 'valor', msg)
     return msg.strip()
 
-# Pré-calcula os embeddings dos exemplos
-vetores_categoria = {}
-for cat, exemplos in categorias.items():
-    vetores_categoria[cat] = [modelo.encode(e, convert_to_tensor=True) for e in exemplos]
+# Pré-calcula embeddings das frases de exemplo
+vetores_categoria = {
+    cat: [modelo.encode(f, convert_to_tensor=True) for f in frases]
+    for cat, frases in categorias.items()
+}
 
-# Função principal de classificação com fallback
+# Classificador principal com fallback
 def classificar_categoria(mensagem, limiar=0.55):
     texto = limpar_mensagem(mensagem)
     emb_msg = modelo.encode(texto, convert_to_tensor=True)
@@ -51,8 +159,8 @@ def classificar_categoria(mensagem, limiar=0.55):
     melhor_categoria = None
     melhor_sim = 0
 
-    for categoria, lista_emb in vetores_categoria.items():
-        for vetor_ref in lista_emb:
+    for categoria, vetores in vetores_categoria.items():
+        for vetor_ref in vetores:
             sim = float(util.pytorch_cos_sim(emb_msg, vetor_ref))
             if sim > melhor_sim:
                 melhor_sim = sim
