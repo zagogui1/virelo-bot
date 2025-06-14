@@ -81,7 +81,7 @@ categoria_vetores = {
     for categoria, frases in categoria_frases.items()
 }
 
-def categorizar_mensagem(mensagem, limiar_similaridade=0.45):
+def classificar_categoria(mensagem, limiar_similaridade=0.45):
     frase_vetor = model.encode(mensagem)
     melhor_categoria = "Outros"
     maior_similaridade = 0
