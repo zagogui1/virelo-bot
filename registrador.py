@@ -1,6 +1,6 @@
 from datetime import datetime
 from supabase import create_client
-from categorizador import detectar_categoria_ia
+from categorizador import classificar_categoria
 import os
 
 # Lê as variáveis de ambiente definidas no Render
@@ -15,7 +15,7 @@ def registrar_gasto(numero, nome, valor, descricao):
     timestamp = datetime.now().isoformat()
 
     # Detecta a categoria com IA + fallback
-    categoria = detectar_categoria_ia(descricao)
+    categoria = classificar_categoria(descricao)
 
     # Busca o usuário pelo telefone
     usuario = supabase.table("users").select("*").eq("telefone", numero).execute()
