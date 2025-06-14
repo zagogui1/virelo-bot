@@ -1,59 +1,99 @@
-
-# categorizador.py
-
 from sentence_transformers import SentenceTransformer, util
 
-# Carrega o modelo leve e eficiente para IA semântica
-model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# Mapeamento semântico expandido com 24 categorias
-CATEGORIAS_SEMANTICAS = {
-    "Assinaturas": "spotify, netflix, globoplay, serviços recorrentes, streaming, assinaturas digitais",
-    "Cartão de Crédito": "fatura do cartão, pagamento de cartão de crédito, parcela de cartão",
-    "Casa": "aluguel, condomínio, prestação da casa, reforma, manutenção do lar, móveis",
-    "Cuidados Pessoais": "barbearia, salão de beleza, manicure, estética, cuidados pessoais, cosméticos",
-    "Doações / Presentes": "presente de aniversário, doações, ajuda financeira, lembrança, mimo",
-    "Educação": "mensalidade escolar, faculdade, cursinho, material didático, educação, curso online",
-    "Impostos": "iptu, ipva, imposto de renda, taxas governamentais, tributos",
-    "Lazer": "cinema, parque, festas, sair com amigos, entretenimento, eventos, diversão",
-    "Mercado": "compras no mercado, supermercado, feira, alimentos, produtos de limpeza",
-    "Outros": "gastos não identificados, categoria desconhecida, sem correspondência clara",
-    "Pets": "ração, veterinário, petshop, banho e tosa, cuidados com animais de estimação",
-    "Recebimentos": "salário, pix recebido, transferência recebida, entrada de dinheiro",
-    "Saúde": "remédios, farmácia, médico, dentista, plano de saúde, exames, consulta",
-    "Transporte": "uber, ônibus, combustível, gasolina, táxi, transporte público",
-    "Utilidades": "luz, água, energia, telefone, gás, internet, contas fixas",
-    "Vestuário": "roupas, sapatos, moda, vestuário, compras em loja de roupa",
-    "Viagem": "passagem, hotel, hospedagem, viagem, passeio turístico, férias",
-    "Investimentos": "compra de ações, tesouro direto, fundos, investimentos financeiros",
-    "Emergências": "socorro, despesa inesperada, reparo urgente, emergência médica ou doméstica",
-    "Serviços domésticos": "faxina, diarista, eletricista, encanador, manutenção doméstica",
-    "Serviços digitais": "domínio, hospedagem, serviços online, canva, google drive, digital",
-    "Trabalho / Profissão": "coworking, uniforme, ferramentas de trabalho, despesa profissional",
-    "Reembolsáveis": "gastos para empresa, será reembolsado, viagem a trabalho, adiantamento corporativo"
+# Frases de exemplo realistas para cada categoria
+categoria_frases = {
+    "Investimentos": [
+        "investi 100 reais em ações", "apliquei no tesouro direto", "comprei cripto", "fiz um investimento hoje"
+    ],
+    "Serviços Digitais": [
+        "paguei netflix", "assinei disney+", "hbo max", "spotify", "canva premium", "paguei domínio do site"
+    ],
+    "Serviços Domésticos": [
+        "chamei o encanador", "paguei a faxineira", "manutenção da casa", "serviço de conserto", "paguei o jardineiro"
+    ],
+    "Reembolsáveis": [
+        "empresa vai me reembolsar", "adiantamento para viagem de trabalho", "vou receber esse valor de volta"
+    ],
+    "Trabalho / Profissão": [
+        "paguei coworking", "gastei com jaleco", "ferramentas de trabalho", "comprei material para o serviço"
+    ],
+    "Emergências": [
+        "gasto inesperado", "socorro com pneu", "emergência médica", "urgência no hospital"
+    ],
+    "Assinaturas": [
+        "assinei um serviço", "plano mensal", "assinatura premium", "paguei o pacote mensal"
+    ],
+    "Cartão de Crédito": [
+        "paguei a fatura", "cartão de crédito do banco", "pagamento do cartão"
+    ],
+    "Casa": [
+        "gastei com aluguel", "paguei condomínio", "conserto da geladeira", "reforma da casa"
+    ],
+    "Cuidados Pessoais": [
+        "fui ao salão", "paguei manicure", "comprei cremes", "cortei o cabelo"
+    ],
+    "Doações / Presentes": [
+        "dei um presente", "doei dinheiro", "contribuição para alguém"
+    ],
+    "Educação": [
+        "paguei a escola", "mensalidade da faculdade", "curso online", "comprei livros"
+    ],
+    "Impostos": [
+        "iptu", "ipva", "paguei imposto", "darf", "receita federal"
+    ],
+    "Lazer e Entretenimento": [
+        "fui ao cinema", "paguei ingresso", "comprei jogo", "diversão com amigos"
+    ],
+    "Mercado": [
+        "comprei no mercado", "gastei no pão de açúcar", "fui ao supermercado", "comida da semana"
+    ],
+    "Outros": [
+        "não sei onde encaixar", "gasto diverso"
+    ],
+    "Pets": [
+        "paguei ração", "vacina do cachorro", "pet shop", "consulta veterinária"
+    ],
+    "Recebimentos": [
+        "recebi meu salário", "dinheiro entrou na conta", "renda extra"
+    ],
+    "Saúde": [
+        "paguei consulta médica", "remédio", "fui ao hospital", "plano de saúde"
+    ],
+    "Transporte": [
+        "uber", "ônibus", "gasolina", "estacionamento", "corrida de app"
+    ],
+    "Utilidades": [
+        "conta de luz", "internet", "água", "telefone fixo"
+    ],
+    "Vestuário": [
+        "comprei roupa", "paguei sapato", "nova camiseta", "vestido novo"
+    ],
+    "Viagem": [
+        "hotel", "passagem aérea", "fiz uma viagem", "reserva no booking"
+    ]
 }
 
-def detectar_categoria_ia(texto):
-    """
-    Detecta a categoria mais provável de um gasto com IA semântica.
-    Usa comparação de similaridade de significado com 24 categorias.
-    """
-    try:
-        texto_embedding = model.encode(texto, convert_to_tensor=True)
-        melhor_score = -1
-        melhor_categoria = "Outros"
+# Vetores prontos
+categoria_vetores = {
+    categoria: [model.encode(frase) for frase in frases]
+    for categoria, frases in categoria_frases.items()
+}
 
-        for categoria, descricao in CATEGORIAS_SEMANTICAS.items():
-            descricao_embedding = model.encode(descricao, convert_to_tensor=True)
-            score = util.cos_sim(texto_embedding, descricao_embedding).item()
-            if score > melhor_score:
-                melhor_score = score
+def categorizar_mensagem(mensagem, limiar_similaridade=0.45):
+    frase_vetor = model.encode(mensagem)
+    melhor_categoria = "Outros"
+    maior_similaridade = 0
+
+    for categoria, vetores in categoria_vetores.items():
+        for vetor in vetores:
+            similaridade = util.cos_sim(frase_vetor, vetor).item()
+            if similaridade > maior_similaridade:
+                maior_similaridade = similaridade
                 melhor_categoria = categoria
 
-        if melhor_score < 0.45:
-            return "Outros"
+    if maior_similaridade >= limiar_similaridade:
         return melhor_categoria
-
-    except Exception as e:
-        print(f"[ERRO IA] {e}")
+    else:
         return "Outros"
